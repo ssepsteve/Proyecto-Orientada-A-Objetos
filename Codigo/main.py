@@ -8,7 +8,7 @@ import sqlite3
 class Participantes:
     # nombre de la base de datos  y ruta 
     path = r'.' #Path relativo, si se esta ejecutando python en terminal y en el mismo directorio donde esta el Proyecto, se puede dejar
-    db_name = path + r'/Participantes.db' 
+    db_name = path + r'/SQL/Participantes.db' 
     actualiza = None
     def __init__(self, master=None):
         # Top Level - Ventana Principal
@@ -21,7 +21,7 @@ class Participantes:
         self.path = self.path +r'/media/logo.ico'
         self.win.iconbitmap(self.path)
         self.win.resizable(False, False)
-        self.win.title("Conferencia MACSS y la Ingenería de Requerimientos")
+        self.win.title("Conferencia MACSS y la Ingeniería de Requerimientos")
         self.win.pack_propagate(False) 
         
         # Main widget
