@@ -7,6 +7,11 @@ import sqlite3
 
 class Participantes:
     # nombre de la base de datos  y ruta 
+    '''
+    El programa debe de ser ejecutado de tal forma que en la terminal de VSCode se encuentre en C:/Direccion/Al/Proyecto/Proyecto-Orientada-A-Objetos
+    Mas no en C:/Direccion/Al/Proyecto/Proeecto-Orientada-A-Objetos/Codigo ya que ocurrira un error porque tomara esta direccion como la direccion
+    relativa
+    '''
     path = r'.' #Path relativo, si se esta ejecutando python en terminal y en el mismo directorio donde esta el Proyecto, se puede dejar
     db_name = path + r'/SQL/Participantes.db' 
     actualiza = None
@@ -138,7 +143,7 @@ class Participantes:
         self.treeDatos.place(x=380, y=10, height=340, width = 500)
 
        # Etiquetas de las columnas
-        self.treeDatos["columns"]=("Nombre","Dirección","Celular","Entidad","Fecha")
+        self.treeDatos["columns"]=("Nombre","Dirección","Celular","Entidad","Fecha") #Posible Error Porque no toma en  cuenta las demas columnas
         # Determina el espacio a mostrar que ocupa el código
         self.treeDatos.column('#0',         anchor="w", stretch="true", width=15)
         self.treeDatos.column('Nombre',     stretch="true",             width=60)
@@ -181,7 +186,7 @@ class Participantes:
         else:
               self.entryId.delete(15,"end")
 
-    def valida_Fecha(self, event=None):
+    def valida_Fecha(self, event=None): #POR IMPLEMENTAR
       pass
     
 
@@ -195,7 +200,7 @@ class Participantes:
         self.entryEntidad.insert(0,self.treeDatos.item(self.treeDatos.selection())['values'][3])
         self.entryFecha.insert(0,self.treeDatos.item(self.treeDatos.selection())['values'][4])
               
-    def limpia_Campos(self):
+    def limpia_Campos(self): #POR IMPLEMENTAR
       pass
 
     def run_Query(self, query, parametros = ()):
