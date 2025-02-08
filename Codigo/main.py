@@ -15,15 +15,15 @@ class Participantes:
     path = r'.' #Path relativo, si se esta ejecutando python en terminal y en el mismo directorio donde esta el Proyecto, se puede dejar
     db_name = path + r'/SQL/Participantes.db' 
     actualiza = None
-    tuplaInscripcion = ("Identificacion","Nombre","Direccion","Celular","Entidad","Fecha")
+    tuplaInscripcion = ("Identificacion","Nombre","Direccion","Celular","Entidad","Fecha","Fecha_Inscripcion","Ciudad")
     def __init__(self, master=None):
         # Top Level - Ventana Principal
         self.win = tk.Tk() if master is None else tk.Toplevel()        
         #Top Level - Configuración
-        self.win.configure(background="#d9f0f9", height="480", relief="flat", width="1024")
-        self.win.geometry("1024x480")
-        self.path = self.path +r'/media/logo.ico'
-        self.win.iconbitmap(self.path)
+        self.win.configure(background="#d9f0f9", relief="flat")
+        self.win.geometry("1224x600")
+        iconPath = self.path +r'/media/logo.ico'
+        self.win.iconbitmap(iconPath)
         self.win.resizable(False, False)
         self.win.title("Conferencia MACSS y la Ingeniería de Requerimientos")
         self.win.pack_propagate(False) 
@@ -32,12 +32,12 @@ class Participantes:
         self.mainwindow = self.win
         
         #Label Frame
-        self.labelsInscripcion = {}
+        self.labelsInscripcion = {} #Labes De Inscripcion
         self.entriesInscripcion = {}
-        self.lblfrm_Datos = tk.LabelFrame(self.win, width= 600, height= 200, labelanchor= "n", 
+        self.lblfrm_Datos = tk.LabelFrame(self.win, width= 700, height= 200, labelanchor= "n", 
                                           font= ("Helvetica", 13,"bold"))
 
-        for iterador in range(0,6):
+        for iterador in range(0,8):
             self.labelsInscripcion[self.tuplaInscripcion[iterador]] = ttk.Label(self.lblfrm_Datos)
             self.labelsInscripcion[self.tuplaInscripcion[iterador]].configure(anchor="e",font="TkTextFont",justify ="left",text=self.tuplaInscripcion[iterador],width ="12")
 
@@ -48,14 +48,12 @@ class Participantes:
         self.entriesInscripcion["Identificacion"].bind("<Key>", self.valida_Identificacion)
         self.entriesInscripcion["Fecha"].bind("<Key>", self.valida_Fecha)
         
-        iterador = 0
-        for row in range(0,6):
-            self.labelsInscripcion[self.tuplaInscripcion[iterador]].grid(column=0,padx="5",pady="15",row=row,sticky="w")
-            self.entriesInscripcion[self.tuplaInscripcion[iterador]].grid(column=1, row=row, sticky="w")
-            iterador +=1
+        for row_iterador in range(0,8):
+            self.labelsInscripcion[self.tuplaInscripcion[row_iterador]].grid(column=0,padx="5",pady="15",row=row_iterador,sticky="w")
+            self.entriesInscripcion[self.tuplaInscripcion[row_iterador]].grid(column=1, row=row_iterador, sticky="w")
           
         #Configuración del Labe Frame    
-        self.lblfrm_Datos.configure(height="350", relief="groove", text=" Inscripción ", width="330")
+        self.lblfrm_Datos.configure(height="450", relief="groove", text=" Inscripción ", width="330")
         self.lblfrm_Datos.place(anchor="nw", relx="0.01", rely="0.1", width="280", x="0", y="0")
         self.lblfrm_Datos.grid_propagate(False)
         
@@ -86,33 +84,33 @@ class Participantes:
         self.style.configure("estilo.Treeview.Heading", background='Azure', font=('Calibri Light', 10,'bold')) 
         self.style.layout("estilo.Treeview", [('estilo.Treeview.treearea', {'sticky': 'nswe'})])
 
-        self.treeDatos = ttk.Treeview(self.win, height = 10, style="estilo.Treeview")
-        self.treeDatos.place(x=380, y=10, height=340, width = 500)
-
+        self.treeDatos = ttk.Treeview(self.win, style="estilo.Treeview")
         # Etiquetas de las columnas
-        self.treeDatos["columns"]=("Nombre","Dirección","Celular","Entidad","Fecha")
+        self.treeDatos["columns"]=("Nombre","Dirección","Celular","Entidad","Fecha","Fecha_Inscripcion","Ciudad")
         
         # Determina el espacio a mostrar que ocupa el código
-        columnas = ('Nombre','Dirección','Celular','Entidad','Fecha')
+        columnas = ('Nombre','Dirección','Celular','Entidad','Fecha',"Fecha_Inscripcion","Ciudad")
         self.treeDatos.column('#0',         anchor="w", stretch="true", width=15)
-        for i in range(0,5):
+        for i in range(0,7):
             self.treeDatos.column(columnas[i],stretch="true",width=60)
         self.treeDatos.column('Celular',    stretch="true",             width=16)
-        self.treeDatos.column('Fecha',      stretch="true",             width=12) 
+        self.treeDatos.column('Fecha',      stretch="true",             width=16) 
+        self.treeDatos.column('Fecha_Inscripcion',stretch="true",width=80)
+        self.treeDatos.column('Ciudad',stretch="true",width=10)
 
        #Encabezados de las columnas de la pantalla
         self.treeDatos.heading('#0',       text = 'Id')
-        for i in range(0,5):
+        for i in range(0,7):
             self.treeDatos.heading(columnas[i],text=columnas[i])
 
         #Scrollbar en el eje Y de treeDatos
         self.scrollbar=ttk.Scrollbar(self.win, orient='vertical', command=self.treeDatos.yview)
         self.treeDatos.configure(yscroll=self.scrollbar.set)
-        self.scrollbar.place(x=1000, y=50, height=400)
+        self.scrollbar.place(x=1200, y=50, height=400)
 
         #Carga los datos en treeDatos
         self.lee_tablaTreeView()    
-        self.treeDatos.place(anchor="nw", height="400", rely="0.1", width="700", x="300", y="0")
+        self.treeDatos.place(anchor="nw", height="450", rely="0.1", width="900", x="300", y="0")
  
    
     def valida(self):
@@ -157,30 +155,33 @@ class Participantes:
         ''' Carga los datos de la BD y Limpia la Tabla tablaTreeView '''
         tabla_TreeView = self.treeDatos.get_children()
         for linea in tabla_TreeView:
-            self.treeDatos.delete(linea)
+            self.treeDatos.delete(linea) #Limpia los datos que habian antes del treeview
         # Seleccionando los datos de la BD
         query = 'SELECT * FROM t_participantes ORDER BY Id DESC'
         db_rows = self.run_Query(query)
         # Insertando los datos de la BD en la tabla de la pantalla
         for row in db_rows:
-            self.treeDatos.insert('',0, text = row[0], values = [row[1],row[2],row[3],row[4],row[5]])
+            self.treeDatos.insert('',0, text = row[0], values = [row[1],row[2],row[3],row[4],row[5],row[6],row[7]])
         
     def adiciona_Registro(self, event=None):
         '''Adiciona un producto a la BD si la validación es True'''
         if self.actualiza:
             self.actualiza = None
             self.entriesInscripcion["Identificacion"].configure(state = 'readonly')
-            query = 'UPDATE t_participantes SET Id = ?,Nombre = ?,Dirección = ?,Celular = ?, Entidad = ?, Fecha = ? WHERE Id = ?'
+            query = 'UPDATE t_participantes SET Id = ?,Nombre = ?,Dirección = ?,Celular = ?, Entidad = ?, Fecha = ?, Fecha_Inscripcion = ?, Ciudad = ? WHERE Id = ?'
             parametros = (self.entriesInscripcion["Identificacion"].get(), self.entriesInscripcion["Nombre"].get(), self.entriesInscripcion["Direccion"].get(),
-                          self.entriesInscripcion["Celular"].get(), self.entriesInscripcion["Entidad"].get(), self.entryFecha.get()
+                          self.entriesInscripcion["Celular"].get(), self.entriesInscripcion["Entidad"].get(), self.entriesInscripcion["Fecha"].get(),
+                          self.entriesInscripcion["Fecha_Inscripcion"].get(),self.entriesInscripcion["Ciudad"].get()
                           )
                         #   self.entriesInscripcion["Identificacion"].get())
             self.run_Query(query, parametros)
             mssg.showinfo('Ok',' Registro actualizado con éxito')
         else:
-            query = 'INSERT INTO t_participantes VALUES(?, ?, ?, ?, ?, ?)'
+            query = 'INSERT INTO t_participantes VALUES(?, ?, ?, ?, ?, ?,?,?)'
             parametros = (self.entriesInscripcion["Identificacion"].get(),self.entriesInscripcion["Nombre"].get(), self.entriesInscripcion["Direccion"].get(),
-                          self.entriesInscripcion["Celular"].get(), self.entriesInscripcion["Entidad"].get(), self.entriesInscripcion["Fecha"].get())
+                          self.entriesInscripcion["Celular"].get(), self.entriesInscripcion["Entidad"].get(), self.entriesInscripcion["Fecha"].get(),
+                          self.entriesInscripcion["Fecha_Inscripcion"].get(),self.entriesInscripcion["Ciudad"].get()
+                          )
             if self.valida():
                 self.run_Query(query, parametros)
                 self.limpia_Campos()
@@ -207,4 +208,4 @@ class Participantes:
 
 if __name__ == "__main__":
     app = Participantes()
-    app.run() 
+    app.run()
