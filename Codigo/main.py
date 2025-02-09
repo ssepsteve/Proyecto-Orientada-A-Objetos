@@ -47,11 +47,14 @@ class Participantes:
         self.entriesInscripcion["Identificacion"].configure(takefocus=True)
         self.entriesInscripcion["Identificacion"].bind("<Key>", self.valida_Identificacion)
         self.entriesInscripcion["Fecha"].bind("<Key>", self.valida_Fecha)
+
+        self.entriesInscripcion["Fecha"].insert(0,"AAAA-MM-DD")
+        self.entriesInscripcion["Fecha_Inscripcion"].insert(0,"AAAA-MM-DD")
         
         for row_iterador in range(0,8):
             self.labelsInscripcion[self.tuplaInscripcion[row_iterador]].grid(column=0,padx="5",pady="15",row=row_iterador,sticky="w")
             self.entriesInscripcion[self.tuplaInscripcion[row_iterador]].grid(column=1, row=row_iterador, sticky="w")
-          
+
         #Configuración del Labe Frame    
         self.lblfrm_Datos.configure(height="450", relief="groove", text=" Inscripción ", width="330")
         self.lblfrm_Datos.place(anchor="nw", relx="0.01", rely="0.1", width="280", x="0", y="0")
@@ -135,13 +138,20 @@ class Participantes:
 
     def carga_Datos(self):
         ''' Carga los datos en los campos desde el treeView'''
+        self.entriesInscripcion["Identificacion"].configure(state="normal")
+        self.entriesInscripcion["Identificacion"].delete(0,tk.END)
         self.entriesInscripcion["Identificacion"].insert(0,self.treeDatos.item(self.treeDatos.selection())['text'])
         self.entriesInscripcion["Identificacion"].configure(state = 'readonly')
-        for i in range(1,6):
+        for i in range(1,8):
             self.entriesInscripcion[self.tuplaInscripcion[i]].insert(0,self.treeDatos.item(self.treeDatos.selection())['values'][i-1])
               
     def limpia_Campos(self): #POR IMPLEMENTAR
-      pass
+        self.entriesInscripcion["Identificacion"].configure(state="normal")
+        for entry in self.entriesInscripcion.values():
+            entry.delete(0,tk.END)
+        #self.entriesInscripcion["Fecha"].insert(0,"Fecha En AAAA-MM-DD")
+        #self.entriesInscripcion["Fecha_Inscripcion"].insert(0,"Fecha En AAAA-MM-DD")
+
 
     def run_Query(self, query, parametros = ()):
         ''' Función para ejecutar los Querys a la base de datos '''
@@ -168,10 +178,11 @@ class Participantes:
         if self.actualiza:
             self.actualiza = None
             self.entriesInscripcion["Identificacion"].configure(state = 'readonly')
-            query = 'UPDATE t_participantes SET Id = ?,Nombre = ?,Dirección = ?,Celular = ?, Entidad = ?, Fecha = ?, Fecha_Inscripcion = ?, Ciudad = ? WHERE Id = ?'
+            query = 'UPDATE t_participantes SET Id = ?,Nombre = ?,Direccion = ?,Celular = ?, Entidad = ?, Fecha = ?, Fecha_Inscripcion = ?, Ciudad = ? WHERE Id = ?'
             parametros = (self.entriesInscripcion["Identificacion"].get(), self.entriesInscripcion["Nombre"].get(), self.entriesInscripcion["Direccion"].get(),
                           self.entriesInscripcion["Celular"].get(), self.entriesInscripcion["Entidad"].get(), self.entriesInscripcion["Fecha"].get(),
-                          self.entriesInscripcion["Fecha_Inscripcion"].get(),self.entriesInscripcion["Ciudad"].get()
+                          self.entriesInscripcion["Fecha_Inscripcion"].get(),self.entriesInscripcion["Ciudad"].get(),
+                          self.entriesInscripcion["Identificacion"].get()
                           )
                         #   self.entriesInscripcion["Identificacion"].get())
             self.run_Query(query, parametros)
@@ -184,8 +195,8 @@ class Participantes:
                           )
             if self.valida():
                 self.run_Query(query, parametros)
-                self.limpia_Campos()
                 mssg.showinfo('',f'Registro: {self.entriesInscripcion["Identificacion"].get()} .. agregado')
+                self.limpia_Campos()
             else:
                 mssg.showerror("¡ Atención !","No puede dejar la identificación vacía")
         self.limpia_Campos()
@@ -199,12 +210,30 @@ class Participantes:
             self.actualiza = True # Esta variable controla la actualización
             self.carga_Datos()
         except IndexError as error:
-            self.actualiza = None
+            self.actualiza = None # Por que no False?
             mssg.showerror("¡ Atención !",'Por favor seleccione un ítem de la tabla')
             return
-        
+                
     def elimina_Registro(self, event=None):
-     pass
+        if len(self.entriesInscripcion["Identificacion"].get())!=0:
+            if mssg.askyesno("Advertencia","Esta seguro que quiere borrar el dato de la base de datos?"):
+                query = "DELETE FROM t_participantes WHERE Id=?"
+                parametros = (self.entriesInscripcion["Identificacion"].get(),)
+                with sqlite3.connect(self.db_name) as conn:
+                    cursor = conn.cursor()
+                    cursor.execute("SELECT 1 FROM t_participantes WHERE Id=?",parametros)
+                    if cursor.fetchone():
+                        result = cursor.execute(query, parametros)
+                        conn.commit()
+                        mssg.showinfo("Registro Eliminado","El Registro Ha Sido Eliminado De La Base De Datos")
+                        self.limpia_Campos()
+                        self.lee_tablaTreeView()
+                    else:
+                        mssg.showerror("Registro No Encontrado","El Registro No Ha Sido Encontrado En La Base De Datos")
+            else:
+                pass
+        else:
+            mssg.showinfo("Campo Vacio","El Campo De Identificacion Esta Vacio")
 
 if __name__ == "__main__":
     app = Participantes()
