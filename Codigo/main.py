@@ -46,10 +46,17 @@ class Participantes:
 
         self.entriesInscripcion["Identificacion"].configure(takefocus=True)
         self.entriesInscripcion["Identificacion"].bind("<Key>", self.valida_Identificacion)
-        self.entriesInscripcion["Fecha"].bind("<Key>", self.valida_Fecha)
+        self.entriesInscripcion["Fecha"].bind("<KeyPress>", self.valida_Fecha)
+        self.entriesInscripcion["Fecha_Inscripcion"].bind("<KeyPress>",self.valida_Fecha)
 
-        self.entriesInscripcion["Fecha"].insert(0,"AAAA-MM-DD")
-        self.entriesInscripcion["Fecha_Inscripcion"].insert(0,"AAAA-MM-DD")
+        #Placeholder para cuando no se tiene un focus en el entry de fecha y fecha_inscripcion, para que aparezca como un texto de default AAAA-MM-DD
+        #Que hace referencia al formato
+        self.poner_placeholder(self.entriesInscripcion["Fecha"])
+        self.poner_placeholder(self.entriesInscripcion["Fecha_Inscripcion"])
+        self.entriesInscripcion["Fecha"].bind("<FocusIn>", self.quitar_placeholder)
+        self.entriesInscripcion["Fecha"].bind("<FocusOut>", self.restaurarPlaceholderValidarFecha)
+        self.entriesInscripcion["Fecha_Inscripcion"].bind("<FocusIn>",self.quitar_placeholder)
+        self.entriesInscripcion["Fecha_Inscripcion"].bind("<FocusOut>",self.restaurarPlaceholderValidarFecha)
         
         for row_iterador in range(0,8):
             self.labelsInscripcion[self.tuplaInscripcion[row_iterador]].grid(column=0,padx="5",pady="15",row=row_iterador,sticky="w")
@@ -70,15 +77,15 @@ class Participantes:
         }
 
         for texto, (comando, x) in config_botones.items():
-            btn = ttk.Button(self.win, text=texto, width=9)
-            btn.place(anchor="nw", rely=0.85, x=x, y=0)
+            self.botones[texto] = tk.Button(self.win, text=texto, width=9)
+            self.botones[texto].place(anchor="nw", rely=0.85, x=x, y=0)
+            self.botones[texto].bind("<Enter>",lambda e,button=self.botones[texto]: button.config(background="green",foreground="white"))
+            self.botones[texto].bind("<Leave>",lambda e,button=self.botones[texto]: button.config(background="SystemButtonFace",foreground="black"))
             
             if texto == "Cancelar":
-                btn.configure(command=comando)
+                self.botones[texto].configure(command=comando)
             else:
-                btn.bind("<1>", comando, add="+")
-            
-            self.botones[texto] = btn 
+                self.botones[texto].bind("<1>", comando, add="+")
         
 
         #tablaTreeView
@@ -125,17 +132,72 @@ class Participantes:
 
     def valida_Identificacion(self, event=None):
         ''' Valida que la longitud no sea mayor a 15 caracteres'''
-        if event.char:
+        if event.char.isdigit():
             if len(self.entriesInscripcion["Identificacion"].get()) >= 15:
                 mssg.showerror('Atención!!','.. ¡Máximo 15 caracteres! ..')
                 self.entriesInscripcion["Identificacion"].delete(15,"end")
         else:
               self.entriesInscripcion["Identificacion"].delete(15,"end")
 
-    def valida_Fecha(self, event=None): #POR IMPLEMENTAR
-      pass
-    
+    def poner_placeholder(self,entry):
+        """Coloca el texto en gris si el campo está vacío."""
+        if entry.get() == "":
+            entry.insert(0, "AAAA-MM-DD")  # Texto de ejemplo
+            entry.config(fg="gray")
 
+    def quitar_placeholder(self,event):
+        """Elimina el texto gris cuando el usuario hace clic en el Entry."""
+        if event.widget.get() == "AAAA-MM-DD":
+            event.widget.delete(0, tk.END)
+            event.widget.config(fg="black")  # Cambia el color al escribir
+
+    def restaurar_placeholder(self,event):
+        """Restaura el texto gris si el usuario no escribió nada."""
+        if event.widget.get() == "":
+            self.poner_placeholder(event.widget)
+    
+    def __dia_existente(self,año:int,mes:str,dia:int):
+        meses_dias = {
+        "01": 31, "02": 28, "03": 31, "04": 30, "05": 31, "06": 30,
+        "07": 31, "08": 31, "09": 30, "10": 31, "11": 30, "12": 31
+        }
+        if mes == "02" and (año % 4 == 0 and (año % 100 != 0 or año % 400 == 0)):
+            meses_dias["02"] = 29
+        # Verificar si el día es válido
+        return 1 <= dia <= meses_dias[mes]   
+    
+    def __fecha_valida(self,entry): #AAAA-MM-DD
+        strEntry = entry.get()
+        año = int(strEntry[0:4])
+        mesStr = strEntry[5:7]
+        dia = int(strEntry[8:10])
+        if len(strEntry) == 10:
+            if año <=2025:
+                if int(mesStr) <=12:
+                    if dia <=31:
+                        return self.__dia_existente(año,mesStr,dia)
+                else: return False
+            else: return False
+        else: return False
+
+    def restaurarPlaceholderValidarFecha(self,event):
+        if event.widget.get() != '' or not self.__fecha_valida(event.widget):
+            mssg.showerror("Fecha Invalida","El Campo De Fecha Es Invalido")
+        else:
+            self.restaurar_placeholder(event)
+
+    def valida_Fecha(self, event=None): #POR IMPLEMENTAR
+        if event.char.isdigit():
+            if len(event.widget.get())==10:
+                event.widget.delete(0,tk.END)
+            else:
+                if len(event.widget.get())==4 or len(event.widget.get())==7:
+                    event.widget.insert(tk.END,"-")
+                else:
+                    pass
+        else:
+            event.widget.delete(10,"end")
+    
     def carga_Datos(self):
         ''' Carga los datos en los campos desde el treeView'''
         self.entriesInscripcion["Identificacion"].configure(state="normal")
