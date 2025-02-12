@@ -21,7 +21,8 @@ class Participantes:
         self.win = tk.Tk() if master is None else tk.Toplevel()        
         #Top Level - Configuración
         self.win.configure(background="#d9f0f9", relief="flat")
-        self.win.geometry("1224x600")
+        self.geometria = "1224x600"
+        self.win.geometry(self.geometria)
         iconPath = self.path +r'/media/logo.ico'
         self.win.iconbitmap(iconPath)
         self.win.resizable(False, False)
@@ -87,6 +88,12 @@ class Participantes:
             else:
                 self.botones[texto].bind("<1>", comando, add="+")
         
+        self.botones["Consultar"] = tk.Button(self.win,text="Consultar",width=9)
+        self.botones["Consultar"].place(anchor="nw", rely=0.91, x=115, y=0)
+        self.botones["Consultar"].bind("<Enter>",lambda e,button=self.botones["Consultar"]: button.config(background="green",foreground="white"))
+        self.botones["Consultar"].bind("<Leave>",lambda e,button=self.botones["Consultar"]: button.config(background="SystemButtonFace",foreground="black"))
+        self.botones["Consultar"].configure(command=self.botonConsultar)
+
 
         #tablaTreeView
         self.style=ttk.Style()
@@ -128,6 +135,15 @@ class Participantes:
         return (len(self.entriesInscripcion["Identificacion"].get()) != 0 )   
 
     def run(self):
+        '''Se Centra Primero La Ventana Y Luego Se Ejecuta'''
+        anchoPantalla = self.mainwindow.winfo_screenwidth()
+        alturaPantalla = self.mainwindow.winfo_screenheight()
+        anchoVentana = self.mainwindow.winfo_width()
+        alturaVentana = self.mainwindow.winfo_height()
+        posicionEsquinaX = int(anchoPantalla/2-anchoVentana/2)
+        posicionEsquinaY = int(alturaPantalla/2-alturaVentana/2)
+        self.mainwindow.geometry(self.geometria+f"+{posicionEsquinaX}+{posicionEsquinaY}")
+
         self.mainwindow.mainloop()
 
     def valida_Identificacion(self, event=None):
@@ -172,9 +188,9 @@ class Participantes:
         mesStr = strEntry[5:7]
         dia = int(strEntry[8:10])
         if len(strEntry) == 10:
-            if año <=2025:
-                if int(mesStr) <=12:
-                    if dia <=31:
+            if 0<año <=2025:
+                if 1<=int(mesStr) <=12:
+                    if 1<=dia <=31:
                         return self.__dia_existente(año,mesStr,dia)
                 else: return False
             else: return False
@@ -213,6 +229,19 @@ class Participantes:
             entry.delete(0,tk.END)
         #self.entriesInscripcion["Fecha"].insert(0,"Fecha En AAAA-MM-DD")
         #self.entriesInscripcion["Fecha_Inscripcion"].insert(0,"Fecha En AAAA-MM-DD")
+
+    def botonConsultar(self,event=None):
+        campoId = self.entriesInscripcion["Identificacion"].get()
+        if campoId in (""," "):
+            mssg.showerror("Id Vacio","El Campo De Identificacion Esta Vacio")
+        else:
+            query = "SELECT Id FROM t_participantes"
+            retCursor = self.run_Query(query)
+            cursorList = [str(row[0]) for row in retCursor]
+            if campoId in cursorList:
+                pass #IMPLEMENTACION DE PASAR DATOS DE LA BASE DE DATOS AL CAMPO INSCRIPCION
+            else:
+                mssg.showerror("Id No Encontrado",f"El Id:{campoId} No Fue Encontrado En La Base De Datos")
 
 
     def run_Query(self, query, parametros = ()):
