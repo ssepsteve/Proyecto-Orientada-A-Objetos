@@ -21,7 +21,8 @@ class Participantes:
         self.win = tk.Tk() if master is None else tk.Toplevel()        
         #Top Level - Configuración
         self.win.configure(background="#d9f0f9", relief="flat")
-        self.win.geometry("1224x600")
+        self.geometria = "1224x600"
+        self.win.geometry(self.geometria)
         iconPath = self.path +r'/media/logo.ico'
         self.win.iconbitmap(iconPath)
         self.win.resizable(False, False)
@@ -46,10 +47,17 @@ class Participantes:
 
         self.entriesInscripcion["Identificacion"].configure(takefocus=True)
         self.entriesInscripcion["Identificacion"].bind("<Key>", self.valida_Identificacion)
-        self.entriesInscripcion["Fecha"].bind("<Key>", self.valida_Fecha)
+        self.entriesInscripcion["Fecha"].bind("<KeyPress>", self.valida_Fecha)
+        self.entriesInscripcion["Fecha_Inscripcion"].bind("<KeyPress>",self.valida_Fecha)
 
-        self.entriesInscripcion["Fecha"].insert(0,"AAAA-MM-DD")
-        self.entriesInscripcion["Fecha_Inscripcion"].insert(0,"AAAA-MM-DD")
+        #Placeholder para cuando no se tiene un focus en el entry de fecha y fecha_inscripcion, para que aparezca como un texto de default AAAA-MM-DD
+        #Que hace referencia al formato
+        self.poner_placeholder(self.entriesInscripcion["Fecha"])
+        self.poner_placeholder(self.entriesInscripcion["Fecha_Inscripcion"])
+        self.entriesInscripcion["Fecha"].bind("<FocusIn>", self.quitar_placeholder)
+        self.entriesInscripcion["Fecha"].bind("<FocusOut>", self.restaurarPlaceholderValidarFecha)
+        self.entriesInscripcion["Fecha_Inscripcion"].bind("<FocusIn>",self.quitar_placeholder)
+        self.entriesInscripcion["Fecha_Inscripcion"].bind("<FocusOut>",self.restaurarPlaceholderValidarFecha)
         
         for row_iterador in range(0,8):
             self.labelsInscripcion[self.tuplaInscripcion[row_iterador]].grid(column=0,padx="5",pady="15",row=row_iterador,sticky="w")
@@ -70,16 +78,22 @@ class Participantes:
         }
 
         for texto, (comando, x) in config_botones.items():
-            btn = ttk.Button(self.win, text=texto, width=9)
-            btn.place(anchor="nw", rely=0.85, x=x, y=0)
+            self.botones[texto] = tk.Button(self.win, text=texto, width=9)
+            self.botones[texto].place(anchor="nw", rely=0.85, x=x, y=0)
+            self.botones[texto].bind("<Enter>",lambda e,button=self.botones[texto]: button.config(background="green",foreground="white"))
+            self.botones[texto].bind("<Leave>",lambda e,button=self.botones[texto]: button.config(background="SystemButtonFace",foreground="black"))
             
             if texto == "Cancelar":
-                btn.configure(command=comando)
+                self.botones[texto].configure(command=comando)
             else:
-                btn.bind("<1>", comando, add="+")
-            
-            self.botones[texto] = btn 
+                self.botones[texto].bind("<1>", comando, add="+")
         
+        self.botones["Consultar"] = tk.Button(self.win,text="Consultar",width=9)
+        self.botones["Consultar"].place(anchor="nw", rely=0.899, x=115, y=0) 
+        self.botones["Consultar"].bind("<Enter>",lambda e,button=self.botones["Consultar"]: button.config(background="green",foreground="white"))
+        self.botones["Consultar"].bind("<Leave>",lambda e,button=self.botones["Consultar"]: button.config(background="SystemButtonFace",foreground="black"))
+        self.botones["Consultar"].configure(command=self.botonConsultar)
+
 
         #tablaTreeView
         self.style=ttk.Style()
@@ -121,21 +135,85 @@ class Participantes:
         return (len(self.entriesInscripcion["Identificacion"].get()) != 0 )   
 
     def run(self):
+        '''Se Centra Primero La Ventana Y Luego Se Ejecuta'''
+        anchoPantalla = self.mainwindow.winfo_screenwidth()
+        alturaPantalla = self.mainwindow.winfo_screenheight()
+        anchoVentana = self.mainwindow.winfo_width()
+        alturaVentana = self.mainwindow.winfo_height()
+        posicionEsquinaX = int(anchoPantalla/2-anchoVentana/2)
+        posicionEsquinaY = int(alturaPantalla/2-alturaVentana/2)
+        self.mainwindow.geometry(self.geometria+f"+{posicionEsquinaX}+{posicionEsquinaY}")
+
         self.mainwindow.mainloop()
 
     def valida_Identificacion(self, event=None):
         ''' Valida que la longitud no sea mayor a 15 caracteres'''
-        if event.char:
+        if event.char.isdigit():
             if len(self.entriesInscripcion["Identificacion"].get()) >= 15:
                 mssg.showerror('Atención!!','.. ¡Máximo 15 caracteres! ..')
                 self.entriesInscripcion["Identificacion"].delete(15,"end")
         else:
               self.entriesInscripcion["Identificacion"].delete(15,"end")
 
-    def valida_Fecha(self, event=None): #POR IMPLEMENTAR
-      pass
-    
+    def poner_placeholder(self,entry):
+        """Coloca el texto en gris si el campo está vacío."""
+        if entry.get() == "":
+            entry.insert(0, "AAAA-MM-DD")  # Texto de ejemplo
+            entry.config(fg="gray")
 
+    def quitar_placeholder(self,event):
+        """Elimina el texto gris cuando el usuario hace clic en el Entry."""
+        if event.widget.get() == "AAAA-MM-DD":
+            event.widget.delete(0, tk.END)
+            event.widget.config(fg="black")  # Cambia el color al escribir
+
+    def restaurar_placeholder(self,event):
+        """Restaura el texto gris si el usuario no escribió nada."""
+        if event.widget.get() == "":
+            self.poner_placeholder(event.widget)
+    
+    def __dia_existente(self,año:int,mes:str,dia:int):
+        meses_dias = {
+        "01": 31, "02": 28, "03": 31, "04": 30, "05": 31, "06": 30,
+        "07": 31, "08": 31, "09": 30, "10": 31, "11": 30, "12": 31
+        }
+        if mes == "02" and (año % 4 == 0 and (año % 100 != 0 or año % 400 == 0)):
+            meses_dias["02"] = 29
+        # Verificar si el día es válido
+        return 1 <= dia <= meses_dias[mes]   
+    
+    def __fecha_valida(self,entry): #AAAA-MM-DD
+        strEntry = entry.get()
+        año = int(strEntry[0:4])
+        mesStr = strEntry[5:7]
+        dia = int(strEntry[8:10])
+        if len(strEntry) == 10:
+            if 0<año <=2025:
+                if 1<=int(mesStr) <=12:
+                    if 1<=dia <=31:
+                        return self.__dia_existente(año,mesStr,dia)
+                else: return False
+            else: return False
+        else: return False
+
+    def restaurarPlaceholderValidarFecha(self,event):
+        if event.widget.get() != '' or not self.__fecha_valida(event.widget):
+            mssg.showerror("Fecha Invalida","El Campo De Fecha Es Invalido")
+        else:
+            self.restaurar_placeholder(event)
+
+    def valida_Fecha(self, event=None): #POR IMPLEMENTAR
+        if event.char.isdigit():
+            if len(event.widget.get())==10:
+                event.widget.delete(0,tk.END)
+            else:
+                if len(event.widget.get())==4 or len(event.widget.get())==7:
+                    event.widget.insert(tk.END,"-")
+                else:
+                    pass
+        else:
+            event.widget.delete(10,"end")
+    
     def carga_Datos(self):
         ''' Carga los datos en los campos desde el treeView'''
         self.entriesInscripcion["Identificacion"].configure(state="normal")
@@ -151,6 +229,36 @@ class Participantes:
             entry.delete(0,tk.END)
         #self.entriesInscripcion["Fecha"].insert(0,"Fecha En AAAA-MM-DD")
         #self.entriesInscripcion["Fecha_Inscripcion"].insert(0,"Fecha En AAAA-MM-DD")
+
+    def botonConsultar(self,event=None):
+        campoId = self.entriesInscripcion["Identificacion"].get().strip() #se obtiene el valor del campo de entrada "Identificación, strip para eliminar cualquier espacio antes o despues del valor"
+
+
+        if not campoId: #Si el campo está vacio, muestra el mensaje de error, detiene la ejecucion del metodo con return
+            mssg.showerror("Id Vacio","El Campo De Identificacion Esta Vacio")
+            return
+        
+        query = "SELECT * FROM t_participantes WHERE Id = ?" #Se define consulta SQL
+        resultado = self.run_Query(query, (campoId,)).fetchone()  # Obtener un solo resultado (fetchone)
+
+        if resultado:
+            # Limpiar los campos antes de cargar nuevos datos
+            self.limpia_Campos()
+
+            # Llenar los campos con los datos de la consulta
+            self.entriesInscripcion["Identificacion"].insert(0, resultado[0])
+            self.entriesInscripcion["Nombre"].insert(0, resultado[1])
+            self.entriesInscripcion["Direccion"].insert(0, resultado[2])
+            self.entriesInscripcion["Celular"].insert(0, resultado[3])
+            self.entriesInscripcion["Entidad"].insert(0, resultado[4])
+            self.entriesInscripcion["Fecha"].insert(0, resultado[5])
+            self.entriesInscripcion["Fecha_Inscripcion"].insert(0, resultado[6])
+            self.entriesInscripcion["Ciudad"].insert(0, resultado[7])
+
+        # Opcional: Bloquear el campo Identificación para evitar cambios accidentales
+            self.entriesInscripcion["Identificacion"].configure(state="readonly")
+        else:
+            mssg.showerror("ID No Encontrado", f"El ID {campoId} no existe en la base de datos")
 
 
     def run_Query(self, query, parametros = ()):
