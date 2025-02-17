@@ -35,15 +35,15 @@ class Participantes:
         #Label Frame
         self.labelsInscripcion = {} #Labes De Inscripcion
         self.entriesInscripcion = {}
-        self.lblfrm_Datos = tk.LabelFrame(self.win, width= 700, height= 200, labelanchor= "n", 
+        self.lblfrm_Datos = tk.LabelFrame(self.win, width= 700, height= 180, labelanchor= "n", 
                                           font= ("Helvetica", 13,"bold"))
 
-        for iterador in range(0,8):
-            self.labelsInscripcion[self.tuplaInscripcion[iterador]] = ttk.Label(self.lblfrm_Datos)
-            self.labelsInscripcion[self.tuplaInscripcion[iterador]].configure(anchor="e",font="TkTextFont",justify ="left",text=self.tuplaInscripcion[iterador],width ="12")
+        for campo in self.tuplaInscripcion:
+            self.labelsInscripcion[campo] = ttk.Label(self.lblfrm_Datos)
+            self.labelsInscripcion[campo].configure(anchor="e",font="TkTextFont",justify ="left",text=campo,width ="12")
 
-            self.entriesInscripcion[self.tuplaInscripcion[iterador]] = tk.Entry(self.lblfrm_Datos)
-            self.entriesInscripcion[self.tuplaInscripcion[iterador]].configure(exportselection="false", justify="left",relief="groove", width="30")
+            self.entriesInscripcion[campo] = tk.Entry(self.lblfrm_Datos)
+            self.entriesInscripcion[campo].configure(exportselection="false", justify="left",relief="groove", width="30")
 
         self.entriesInscripcion["Identificacion"].configure(takefocus=True)
         self.entriesInscripcion["Identificacion"].bind("<Key>", self.valida_Identificacion)
@@ -63,6 +63,7 @@ class Participantes:
             self.labelsInscripcion[self.tuplaInscripcion[row_iterador]].grid(column=0,padx="5",pady="15",row=row_iterador,sticky="w")
             self.entriesInscripcion[self.tuplaInscripcion[row_iterador]].grid(column=1, row=row_iterador, sticky="w")
 
+        #self.entriesInscripcion["Ciudad"].configure(state="readonly")
         #Configuración del Labe Frame    
         self.lblfrm_Datos.configure(height="450", relief="groove", text=" Inscripción ", width="330")
         self.lblfrm_Datos.place(anchor="nw", relx="0.01", rely="0.1", width="280", x="0", y="0")
@@ -94,6 +95,10 @@ class Participantes:
         self.botones["Consultar"].bind("<Leave>",lambda e,button=self.botones["Consultar"]: button.config(background="SystemButtonFace",foreground="black"))
         self.botones["Consultar"].configure(command=self.botonConsultar)
 
+
+        self.entriesInscripcion["Ciudad"].configure(width=15,state="readonly") 
+        self.botones["Ciudades"] = tk.Button(self.lblfrm_Datos,text="Buscar",width=5,height=1,command=self.abrirVentanaBusqueda)
+        self.botones["Ciudades"].place(relx=0.82,rely=0.92)
 
         #tablaTreeView
         self.style=ttk.Style()
@@ -143,7 +148,7 @@ class Participantes:
         posicionEsquinaX = int(anchoPantalla/2-anchoVentana/2)
         posicionEsquinaY = int(alturaPantalla/2-alturaVentana/2)
         self.mainwindow.geometry(self.geometria+f"+{posicionEsquinaX}+{posicionEsquinaY}")
-
+        self.mainwindow.deiconify()
         self.mainwindow.mainloop()
 
     def valida_Identificacion(self, event=None):
@@ -220,6 +225,7 @@ class Participantes:
         self.entriesInscripcion["Identificacion"].delete(0,tk.END)
         self.entriesInscripcion["Identificacion"].insert(0,self.treeDatos.item(self.treeDatos.selection())['text'])
         self.entriesInscripcion["Identificacion"].configure(state = 'readonly')
+        self.entriesInscripcion["Ciudad"].configure(state="normal")
         for i in range(1,8):
             self.entriesInscripcion[self.tuplaInscripcion[i]].insert(0,self.treeDatos.item(self.treeDatos.selection())['values'][i-1])
               
@@ -243,7 +249,6 @@ class Participantes:
             else:
                 mssg.showerror("Id No Encontrado",f"El Id:{campoId} No Fue Encontrado En La Base De Datos")
 
-
     def run_Query(self, query, parametros = ()):
         ''' Función para ejecutar los Querys a la base de datos '''
         with sqlite3.connect(self.db_name) as conn:
@@ -264,6 +269,18 @@ class Participantes:
         for row in db_rows:
             self.treeDatos.insert('',0, text = row[0], values = [row[1],row[2],row[3],row[4],row[5],row[6],row[7]])
         
+    def lee_tablaBusqueda(self):
+        ''' Carga los datos de la BD y Limpia la Tabla tablaTreeView '''
+        tabla_TreeView = self.tablaBusqueda.get_children()
+        for linea in tabla_TreeView:
+            self.tablaBusqueda.delete(linea) #Limpia los datos que habian antes del treeview
+        # Seleccionando los datos de la BD
+        query = 'SELECT * FROM t_ciudades ORDER BY Id_Ciudad DESC'
+        db_rows = self.run_Query(query)
+        # Insertando los datos de la BD en la tabla de la pantalla
+        for row in db_rows:
+            self.tablaBusqueda.insert('',0, text = row[0], values = [row[1],row[2],row[3]])
+
     def adiciona_Registro(self, event=None):
         '''Adiciona un producto a la BD si la validación es True'''
         if self.actualiza:
@@ -325,6 +342,59 @@ class Participantes:
                 pass
         else:
             mssg.showinfo("Campo Vacio","El Campo De Identificacion Esta Vacio")
+
+    def abrirVentanaBusqueda(self):
+        self.winBusqueda = tk.Toplevel()
+        self.winBusqueda.geometry("700x500")
+        self.winBusqueda.resizable(False,False)
+        self.frameEntry = tk.Frame(self.winBusqueda,width=700,height=50)
+        self.frameTabla = ttk.Frame(self.winBusqueda,width=700,height=400)
+        self.frameBotones = tk.Frame(self.winBusqueda,width=700,height=50)
+
+        self.frameEntry.grid(row=0,column=0,sticky="nsew")
+        self.frameTabla.grid(row=1,column=0,sticky="nsew")
+        self.frameBotones.grid(row=2,column=0,sticky="nsew")
+
+        self.entryBusqueda = tk.Entry(self.frameEntry)
+        self.entryBusqueda.pack(expand=True,fill="both")
+        self.tablaBusqueda = ttk.Treeview(self.frameTabla)
+        # Etiquetas de las columnas
+        self.tablaBusqueda["columns"]=("Id_Departamento","Ciudad","Departamento")
+        
+        # Determina el espacio a mostrar que ocupa el código
+        columnas = ("Id_Departamento","Ciudad","Departamento")
+        self.tablaBusqueda.column('#0',         anchor="w", stretch="true", width=80)
+        for columna in columnas:
+            self.tablaBusqueda.column(columna,stretch="true",width=180)
+
+       #Encabezados de las columnas de la pantalla
+        self.tablaBusqueda.heading('#0',       text = 'Id_Ciudad')
+        for columna in columnas:
+            self.tablaBusqueda.heading(columna,text=columna)
+
+        #Scrollbar en el eje Y de treeDatos
+        self.scrollbar=ttk.Scrollbar(self.winBusqueda, orient='vertical', command=self.tablaBusqueda.yview)
+        self.tablaBusqueda.configure(yscroll=self.scrollbar.set)
+        self.scrollbar.place(x=680, y=50, height=500)
+        self.lee_tablaBusqueda()
+        self.tablaBusqueda.place(height=400,x=40)
+
+        self.labelCiudad = tk.Label(self.frameBotones,text="Ciudad: ")
+        self.entryCiudad = tk.Entry(self.frameBotones,state="readonly")
+        self.labelDepartamento = tk.Label(self.frameBotones,text="Departamento: ")
+        self.entryDepartamento = tk.Entry(self.frameBotones,state="readonly")
+        self.botonBuscar = tk.Button(self.frameBotones,text="Buscar Ciudad/Departamento")
+        self.botonInsertar = tk.Button(self.frameBotones,text="Insertar")
+
+        self.frameBotones.columnconfigure((0,1,2,3),weight=1)
+
+        self.labelCiudad.grid(row=0,column=0)
+        self.entryCiudad.grid(row=0,column=1)
+        self.labelDepartamento.grid(row=0,column=2)
+        self.entryDepartamento.grid(row=0,column=3)
+        self.botonBuscar.grid(row=1,column=0,columnspan=2)
+        self.botonInsertar.grid(row=1,column=1,columnspan=2)
+
 
 if __name__ == "__main__":
     app = Participantes()
