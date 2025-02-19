@@ -397,7 +397,21 @@ class Participantes:
         self.lee_tablaTreeView()
                
     def elimina_registro(self, event=None):
-        if len(self.entries_inscripcion["Identificacion"].get())!=0:
+        selecciones = self.tree_datos.selection()
+        if len(selecciones)>0:
+            if mssg.askyesno("Advertencia","Esta seguro que quiere borrar los datos seleccionados de la base de datos?"):
+                items = []
+                for seleccion in selecciones:
+                    items.append(self.tree_datos.item(seleccion))
+                for item in items:
+                    id = item["text"]
+                    query = "DELETE FROM t_participantes WHERE Id=?"
+                    parametros = (id,)
+                    self.run_query(query,parametros)
+
+                mssg.showinfo("Registros Eliminados","Los Registros Han Sido Eliminado De La Base De Datos")
+                self.lee_tablaTreeView()
+        elif len(self.entries_inscripcion["Identificacion"].get())!=0:
             if mssg.askyesno("Advertencia","Esta seguro que quiere borrar el dato de la base de datos?"):
                 query = "DELETE FROM t_participantes WHERE Id=?"
                 parametros = (self.entries_inscripcion["Identificacion"].get(),)
