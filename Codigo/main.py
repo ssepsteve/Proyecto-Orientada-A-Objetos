@@ -4,6 +4,7 @@ import tkinter as tk
 import tkinter.ttk as ttk
 from tkinter import messagebox as mssg
 import sqlite3
+import re
 
 class Participantes:
     # nombre de la base de datos  y ruta 
@@ -58,6 +59,7 @@ class Participantes:
         self.entriesInscripcion["Fecha"].bind("<FocusOut>", self.restaurarPlaceholderValidarFecha)
         self.entriesInscripcion["Fecha_Inscripcion"].bind("<FocusIn>",self.quitar_placeholder)
         self.entriesInscripcion["Fecha_Inscripcion"].bind("<FocusOut>",self.restaurarPlaceholderValidarFecha)
+        self.entriesInscripcion["Celular"].bind("<Key>",self.aceptar_solo_numeros)
         
         for row_iterador in range(0,8):
             self.labelsInscripcion[self.tuplaInscripcion[row_iterador]].grid(column=0,padx="5",pady="15",row=row_iterador,sticky="w")
@@ -98,6 +100,8 @@ class Participantes:
 
         self.entriesInscripcion["Ciudad"].configure(width=15,state="readonly") 
         self.botones["Ciudades"] = tk.Button(self.lblfrm_Datos,text="Buscar",width=5,height=1,command=self.abrirVentanaBusqueda)
+        self.botones["Ciudades"].bind("<Enter>",lambda e,button=self.botones["Ciudades"]: button.config(background="green",foreground="white"))
+        self.botones["Ciudades"].bind("<Leave>",lambda e,button=self.botones["Ciudades"]: button.config(background="SystemButtonFace",foreground="black"))
         self.botones["Ciudades"].place(relx=0.82,rely=0.92)
 
         #tablaTreeView
@@ -151,8 +155,16 @@ class Participantes:
         self.mainwindow.deiconify()
         self.mainwindow.mainloop()
 
+    def aceptar_solo_numeros(self,event:tk.Event):
+        if len(event.char) == 0: return "break"
+        elif not event.char.isdigit() and ord(event.char) != 8:return "break"
+        else:return None
+
     def valida_Identificacion(self, event:tk.Event=None):
         ''' Valida que la longitud no sea mayor a 15 caracteres'''
+        validar = self.aceptar_solo_numeros(event=event)
+        if validar == "break":
+            return validar
         if event.char.isdigit():
             if len(self.entriesInscripcion["Identificacion"].get()) >= 15:
                 mssg.showerror('Atención!!','.. ¡Máximo 15 caracteres! ..')
@@ -198,6 +210,8 @@ class Participantes:
     
     def __fecha_valida(self,entry): #AAAA-MM-DD
         strEntry = entry.get()
+        if len(strEntry) != 10:
+            return False
         if strEntry not in (""," "):
             año = int(strEntry[0:4])
             mesStr = strEntry[5:7]
@@ -213,12 +227,15 @@ class Participantes:
         return True
 
     def restaurarPlaceholderValidarFecha(self,event:tk.Event):
-        if event.widget.get() != '' or not self.__fecha_valida(event.widget):
+        if not self.__fecha_valida(event.widget):
             mssg.showerror("Fecha Invalida","El Campo De Fecha Es Invalido")
         else:
-            self.restaurar_placeholder(event)
+            self.restaurar_placeholder(event=event)
 
     def valida_Fecha(self, event:tk.Event=None): #POR IMPLEMENTAR
+        validar = self.aceptar_solo_numeros(event=event)
+        if validar == "break":
+            return "break"
         if event.char.isdigit():
             if len(event.widget.get())==10:
                 event.widget.delete(0,tk.END)
@@ -253,10 +270,6 @@ class Participantes:
         self.restaurar_placeholder(entry=self.entriesInscripcion["Fecha_Inscripcion"])
         self.restaurar_placeholder(entry=self.entriesInscripcion["Fecha"])
 
-
-
-        
-
     def botonConsultar(self,event=None):
         campoId = self.entriesInscripcion["Identificacion"].get()
         if campoId in (""," "):
@@ -290,17 +303,47 @@ class Participantes:
         for row in db_rows:
             self.treeDatos.insert('',0, text = row[0], values = [row[1],row[2],row[3],row[4],row[5],row[6],row[7]])
         
-    def lee_tablaBusqueda(self):
+    def diccionario_posible_busqueda(self,query):
+        patron = re.compile(re.escape(query), re.IGNORECASE)
+
+        resultados = {}
+
+        for ciudad_id, info in self.diccionario_tabla_ciudades.items():
+            # Buscar en ID de ciudad, número de departamento, nombre de departamento o ciudad
+            if (
+                patron.search(ciudad_id) or
+                patron.search(info["Id_Departamento"]) or
+                patron.search(info["Departamento"]) or
+                patron.search(info["Ciudad"])
+            ):
+                resultados[ciudad_id] = info
+
+        return resultados
+
+    def lee_tablaBusqueda(self,datos:dict=None):
         ''' Carga los datos de la BD y Limpia la Tabla tablaTreeView '''
         tabla_TreeView = self.tablaBusqueda.get_children()
         for linea in tabla_TreeView:
             self.tablaBusqueda.delete(linea) #Limpia los datos que habian antes del treeview
         # Seleccionando los datos de la BD
-        query = 'SELECT * FROM t_ciudades ORDER BY Id_Ciudad DESC'
-        db_rows = self.run_Query(query)
-        # Insertando los datos de la BD en la tabla de la pantalla
-        for row in db_rows:
-            self.tablaBusqueda.insert('',0, text = row[0], values = [row[1],row[2],row[3]])
+        if datos == None:
+            query = 'SELECT * FROM t_ciudades ORDER BY Id_Ciudad DESC'
+            db_rows = self.run_Query(query)
+            # Insertando los datos de la BD en la tabla de la pantalla
+            self.diccionario_tabla_ciudades = {}
+            for row in db_rows:
+                id_departamento = str(row[0])
+                id_ciudad = str(row[1])
+                departamento = row[2]
+                ciudad = row[3]
+                self.tablaBusqueda.insert('',0, text = id_departamento, values = [id_ciudad,departamento,ciudad]) # db_rows = ["id_departamento","id_ciudad","departamento","ciudad"]
+                self.diccionario_tabla_ciudades[id_ciudad] = {"Id_Departamento":id_departamento,"Departamento":departamento,"Ciudad":ciudad}
+        else:
+            for id_ciudad, info in datos.items():
+                id_departamento = info["Id_Departamento"]
+                departamento = info["Departamento"]
+                ciudad = info["Ciudad"]
+                self.tablaBusqueda.insert('',0, text = id_departamento, values = [id_ciudad,departamento,ciudad])
 
     def adiciona_Registro(self, event=None):
         '''Adiciona un producto a la BD si la validación es True'''
@@ -398,7 +441,7 @@ class Participantes:
         #Scrollbar en el eje Y de treeDatos
         self.scrollbar=ttk.Scrollbar(self.winBusqueda, orient='vertical', command=self.tablaBusqueda.yview)
         self.tablaBusqueda.configure(yscroll=self.scrollbar.set)
-        self.scrollbar.place(x=680, y=50, height=500)
+        self.scrollbar.place(x=680, y=50, height=400)
         self.lee_tablaBusqueda()
         self.tablaBusqueda.place(height=400,x=40)
 
@@ -406,8 +449,9 @@ class Participantes:
         self.entryCiudad = tk.Entry(self.frameBotones,state="readonly")
         self.labelDepartamento = tk.Label(self.frameBotones,text="Departamento: ")
         self.entryDepartamento = tk.Entry(self.frameBotones,state="readonly")
-        self.botonBuscar = tk.Button(self.frameBotones,text="Buscar Ciudad/Departamento")
-        self.botonInsertar = tk.Button(self.frameBotones,text="Insertar")
+        self.botonBuscar = tk.Button(self.frameBotones,text="Buscar Ciudad/Departamento",command=self.boton_buscar_ciudad)
+        self.botonInsertar = tk.Button(self.frameBotones,text="Insertar",command=self.boton_insertar_busqueda)
+        self.botonGrabarCiudad = tk.Button(self.frameBotones,text="Grabar Ciudad",command=self.boton_grabar_ciudad)
 
         self.frameBotones.columnconfigure((0,1,2,3),weight=1)
 
@@ -416,7 +460,36 @@ class Participantes:
         self.labelDepartamento.grid(row=0,column=2)
         self.entryDepartamento.grid(row=0,column=3)
         self.botonBuscar.grid(row=1,column=0,columnspan=2)
-        self.botonInsertar.grid(row=1,column=1,columnspan=2)
+        self.botonInsertar.grid(row=1,column=2)
+        self.botonGrabarCiudad.grid(row=1,column=3)
+        
+    def boton_buscar_ciudad(self):
+        buscar = self.entryBusqueda.get()
+        resultado = self.diccionario_posible_busqueda(buscar)
+        self.lee_tablaBusqueda(datos=resultado)
+
+    def boton_insertar_busqueda(self):
+        try:
+            # Carga los campos desde la tabla TreeView
+            textoDepartamento = self.tablaBusqueda.item(self.tablaBusqueda.selection())['values'][1]
+            textoCiudad = self.tablaBusqueda.item(self.tablaBusqueda.selection())['values'][2]
+            self.insertar_texto_entry(self.entryCiudad,textoCiudad)
+            self.insertar_texto_entry(self.entryDepartamento,textoDepartamento)
+        except IndexError as error:
+            mssg.showerror("¡ Atención !",'Por favor seleccione un ítem de la tabla')
+            return
+
+    def boton_grabar_ciudad(self):
+        self.entryCiudad.configure(state="normal")
+        textoCiudad = self.entryCiudad.get()
+        self.entryCiudad.configure(state="disabled")
+        if textoCiudad not in (""," "):
+            if mssg.askyesno("Grabar Ciudad",f"Esta Seguro Que Quiere Grabar La Ciudad: '{textoCiudad}' En La Ventana De Inscripcion?"):
+                self.insertar_texto_entry(entry=self.entriesInscripcion["Ciudad"],texto=textoCiudad)
+                self.winBusqueda.destroy()
+                self.winBusqueda.update()
+        else:
+            pass
 
     def insertar_texto_entry(self,entry:tk.Entry,texto:str):
         entry.configure(state="normal")
