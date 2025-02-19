@@ -151,14 +151,14 @@ class Participantes:
         self.mainwindow.deiconify()
         self.mainwindow.mainloop()
 
-    def valida_Identificacion(self, event=None):
+    def valida_Identificacion(self, event:tk.Event=None):
         ''' Valida que la longitud no sea mayor a 15 caracteres'''
         if event.char.isdigit():
             if len(self.entriesInscripcion["Identificacion"].get()) >= 15:
                 mssg.showerror('Atención!!','.. ¡Máximo 15 caracteres! ..')
                 self.entriesInscripcion["Identificacion"].delete(15,"end")
         else:
-              self.entriesInscripcion["Identificacion"].delete(15,"end")
+            self.entriesInscripcion["Identificacion"].delete(15,"end")
 
     def poner_placeholder(self,entry):
         """Coloca el texto en gris si el campo está vacío."""
@@ -166,16 +166,25 @@ class Participantes:
             entry.insert(0, "AAAA-MM-DD")  # Texto de ejemplo
             entry.config(fg="gray")
 
-    def quitar_placeholder(self,event):
+    def quitar_placeholder(self,event:tk.Event=None,entry:tk.Entry=None):
         """Elimina el texto gris cuando el usuario hace clic en el Entry."""
-        if event.widget.get() == "AAAA-MM-DD":
-            event.widget.delete(0, tk.END)
-            event.widget.config(fg="black")  # Cambia el color al escribir
+        if event == None:
+            if entry.get() == "AAAA-MM-DD":
+                entry.delete(0, tk.END)
+                entry.config(fg="black")
+        else:
+            if event.widget.get() == "AAAA-MM-DD":
+                event.widget.delete(0, tk.END)
+                event.widget.config(fg="black")  # Cambia el color al escribir
 
-    def restaurar_placeholder(self,event):
+    def restaurar_placeholder(self,event:tk.Event=None,entry:tk.Entry=None):
         """Restaura el texto gris si el usuario no escribió nada."""
-        if event.widget.get() == "":
-            self.poner_placeholder(event.widget)
+        if event == None:
+            if entry.get() == "":
+                self.poner_placeholder(entry)
+        else:
+            if event.widget.get() == "":
+                self.poner_placeholder(event.widget)
     
     def __dia_existente(self,año:int,mes:str,dia:int):
         meses_dias = {
@@ -189,25 +198,27 @@ class Participantes:
     
     def __fecha_valida(self,entry): #AAAA-MM-DD
         strEntry = entry.get()
-        año = int(strEntry[0:4])
-        mesStr = strEntry[5:7]
-        dia = int(strEntry[8:10])
-        if len(strEntry) == 10:
-            if 0<año <=2025:
-                if 1<=int(mesStr) <=12:
-                    if 1<=dia <=31:
-                        return self.__dia_existente(año,mesStr,dia)
+        if strEntry not in (""," "):
+            año = int(strEntry[0:4])
+            mesStr = strEntry[5:7]
+            dia = int(strEntry[8:10])
+            if len(strEntry) == 10:
+                if 0<año <=2025:
+                    if 1<=int(mesStr) <=12:
+                        if 1<=dia <=31:
+                            return self.__dia_existente(año,mesStr,dia)
+                    else: return False
                 else: return False
             else: return False
-        else: return False
+        return True
 
-    def restaurarPlaceholderValidarFecha(self,event):
+    def restaurarPlaceholderValidarFecha(self,event:tk.Event):
         if event.widget.get() != '' or not self.__fecha_valida(event.widget):
             mssg.showerror("Fecha Invalida","El Campo De Fecha Es Invalido")
         else:
             self.restaurar_placeholder(event)
 
-    def valida_Fecha(self, event=None): #POR IMPLEMENTAR
+    def valida_Fecha(self, event:tk.Event=None): #POR IMPLEMENTAR
         if event.char.isdigit():
             if len(event.widget.get())==10:
                 event.widget.delete(0,tk.END)
@@ -222,19 +233,29 @@ class Participantes:
     def carga_Datos(self):
         ''' Carga los datos en los campos desde el treeView'''
         self.entriesInscripcion["Identificacion"].configure(state="normal")
-        self.entriesInscripcion["Identificacion"].delete(0,tk.END)
-        self.entriesInscripcion["Identificacion"].insert(0,self.treeDatos.item(self.treeDatos.selection())['text'])
-        self.entriesInscripcion["Identificacion"].configure(state = 'readonly')
         self.entriesInscripcion["Ciudad"].configure(state="normal")
+        self.entriesInscripcion["Identificacion"].delete(0,tk.END)
+        self.entriesInscripcion["Identificacion"].insert(0,self.treeDatos.item(self.treeDatos.selection())['text'])       
         for i in range(1,8):
+            self.entriesInscripcion[self.tuplaInscripcion[i]].delete(0,tk.END)
             self.entriesInscripcion[self.tuplaInscripcion[i]].insert(0,self.treeDatos.item(self.treeDatos.selection())['values'][i-1])
+        self.entriesInscripcion["Identificacion"].configure(state = 'readonly')
+        self.entriesInscripcion["Ciudad"].configure(state="readonly")
               
-    def limpia_Campos(self): #POR IMPLEMENTAR
+    def limpia_Campos(self):
         self.entriesInscripcion["Identificacion"].configure(state="normal")
+        self.entriesInscripcion["Ciudad"].configure(state="normal")
+        self.quitar_placeholder(entry=self.entriesInscripcion["Fecha_Inscripcion"])
+        self.quitar_placeholder(entry=self.entriesInscripcion["Fecha"])
         for entry in self.entriesInscripcion.values():
             entry.delete(0,tk.END)
-        #self.entriesInscripcion["Fecha"].insert(0,"Fecha En AAAA-MM-DD")
-        #self.entriesInscripcion["Fecha_Inscripcion"].insert(0,"Fecha En AAAA-MM-DD")
+        self.entriesInscripcion["Ciudad"].configure(state="readonly")
+        self.restaurar_placeholder(entry=self.entriesInscripcion["Fecha_Inscripcion"])
+        self.restaurar_placeholder(entry=self.entriesInscripcion["Fecha"])
+
+
+
+        
 
     def botonConsultar(self,event=None):
         campoId = self.entriesInscripcion["Identificacion"].get()
@@ -315,6 +336,8 @@ class Participantes:
             # Carga los campos desde la tabla TreeView
             self.treeDatos.item(self.treeDatos.selection())['text']
             self.limpia_Campos()
+            self.entriesInscripcion["Fecha_Inscripcion"].configure(fg="black")
+            self.entriesInscripcion["Fecha"].configure(fg="black")
             self.actualiza = True # Esta variable controla la actualización
             self.carga_Datos()
         except IndexError as error:
@@ -359,10 +382,10 @@ class Participantes:
         self.entryBusqueda.pack(expand=True,fill="both")
         self.tablaBusqueda = ttk.Treeview(self.frameTabla)
         # Etiquetas de las columnas
-        self.tablaBusqueda["columns"]=("Id_Departamento","Ciudad","Departamento")
+        self.tablaBusqueda["columns"]=("Id_Departamento","Departamento","Ciudad")
         
         # Determina el espacio a mostrar que ocupa el código
-        columnas = ("Id_Departamento","Ciudad","Departamento")
+        columnas = ("Id_Departamento","Departamento","Ciudad")
         self.tablaBusqueda.column('#0',         anchor="w", stretch="true", width=80)
         for columna in columnas:
             self.tablaBusqueda.column(columna,stretch="true",width=180)
@@ -395,6 +418,11 @@ class Participantes:
         self.botonBuscar.grid(row=1,column=0,columnspan=2)
         self.botonInsertar.grid(row=1,column=1,columnspan=2)
 
+    def insertar_texto_entry(self,entry:tk.Entry,texto:str):
+        entry.configure(state="normal")
+        entry.delete(0,tk.END)
+        entry.insert(0,texto)
+        entry.configure(state="disabled")
 
 if __name__ == "__main__":
     app = Participantes()
