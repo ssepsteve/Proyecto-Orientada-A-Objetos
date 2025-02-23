@@ -242,7 +242,7 @@ class Participantes:
             self.restaurar_placeholder(event=event) #En caso tal de que la longitud de los caracteres en el string sea igual a 1 o 0
 
     def valida_Fecha(self, event:tk.Event=None): #POR IMPLEMENTAR
-        '''Se encarga de dar el formato automatico de AAAA-MM-DD'''
+        '''Se encarga de dar el formato automatico de AAAA-MM-DD osea pone los guiones'''
         validar = self.aceptar_solo_numeros(event=event)
         if validar == "break":
             return "break"
@@ -274,7 +274,7 @@ class Participantes:
         ''' Carga los datos en la seccion de inscripcion al hacer uso del treeView, en el campo seleccionado'''
         seleccion = self.tree_datos.selection()
         
-        item = self.tree_datos.item(seleccion)
+        item = self.tree_datos.item(seleccion[len(seleccion)-1])
         identificacion = item['text']
         valores = item['values']
 
@@ -338,7 +338,7 @@ class Participantes:
             else:
                 mssg.showerror("Id No Encontrado",f"El Id: {campo_id} No Fue Encontrado En La Base De Datos")
 
-    def run_query(self, query, parametros = ()):
+    def run_query(self, query:str, parametros:tuple = ()):
         ''' Función para ejecutar los Querys a la base de datos y retornar un cursor'''
         with sqlite3.connect(self.db_name) as conn:
             cursor = conn.cursor()
@@ -544,7 +544,7 @@ class Participantes:
         try:
             # Carga los campos desde la tabla TreeView
             seleccion = self.tabla_busqueda.selection()
-            items = self.tabla_busqueda.item(seleccion)
+            items = self.tabla_busqueda.item(seleccion[len(seleccion)-1])
             valores = items['values']
             texto_departamento = valores[1]
             texto_ciudad = valores[2]
