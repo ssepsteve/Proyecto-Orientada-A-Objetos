@@ -169,10 +169,10 @@ class Participantes:
         validar = self.aceptar_solo_numeros(event=event)
         if validar == "break":return validar
         elif event.char.isdigit():
-            if len(self.entries_inscripcion["Identificacion"].get()) >= 15:
+            if len(self.entries_inscripcion["Identificacion"].get()) > 14:
                 mssg.showerror('Atención!!','.. ¡Máximo 15 caracteres! ..')
         
-        self.entries_inscripcion["Identificacion"].delete(15,"end") #Borra el caracter numero 15 si es que existe
+        self.entries_inscripcion["Identificacion"].delete(14,tk.END) #Borra el caracter numero 15 si es que existe
 
     def poner_placeholder(self,entry,texto:str="AAAA-MM-DD"):
         """Coloca el texto en gris si el campo está vacío."""
@@ -210,6 +210,7 @@ class Participantes:
         if mes == "02" and (año % 4 == 0 and (año % 100 != 0 or año % 400 == 0)):
             meses_dias["02"] = 29
         # Verificar si el día es válido
+        
         return 1 <= dia <= meses_dias[mes]   
     
     def __fecha_valida(self,entry): 
@@ -229,7 +230,8 @@ class Participantes:
                     if 1<=int(mesStr) <=12:
                         if 1<=dia <=31:
                             return self.__dia_existente(año,mesStr,dia)
-                    else: return False
+                        else:return False
+                    else:return False
                 else: return False
             else: return False
         return True
@@ -288,7 +290,7 @@ class Participantes:
         ''' Carga los datos en la seccion de inscripcion al hacer uso del treeView, en el campo seleccionado'''
         seleccion = self.tree_datos.selection()
         
-        item = self.tree_datos.item(seleccion[len(seleccion)-1])
+        item = self.tree_datos.item(seleccion[-1])
         identificacion = item['text']
         valores = item['values']
 
@@ -619,4 +621,5 @@ class Participantes:
 
 if __name__ == "__main__":
     app = Participantes()
+    
     app.run()
