@@ -1,62 +1,43 @@
-import sqlite3
-import tkinter
-def prueba_diccionario():
-   diccionario = {1:"Valor 1",
-                  "2":["v","a","l","o","r",2],
-                  False:{"valor","3"},
-                  "4":{"texto:":"valor",
-                       "numero":3}
-                  }
-   for set in diccionario.items():
-      llave = set[0]
-      valor = set[1]
-      print(f"Llave: {llave} Valor: {valor} Tipo De Dato Valor: {type(valor)}")
+import tkinter as tk
 
-def prueba_tupla():
-   tupla = (3.1416,2.718,6.67E-11)
-   for valor in tupla:
-      print(valor)
+class DateEntryApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Date Entry Format")
 
-def iterador_multiple():
-   tupla = ("1","2","3","4","5")
-   for contador, valor in enumerate(tupla):
-      print(f"El valor numero: {contador} es el valor en la tupla: {valor}")
+        self.date_entry = tk.Entry(root, width=10)
+        self.date_entry.pack(pady=20)
 
-def crear_una_tabla():
-   direccion_db = r"F:\CODE\Clase POO\Proyecto\Proyecto-Orientada-A-Objetos\base_de_datos.db"
-   with sqlite3.connect(direccion_db) as conn:
-      cursor = conn.cursor()
-      cursor.execute("CREATE TABLE prueba(Id PRIMARY KEY UNIQUE NOT NULL,TEXT texto)")
-      conn.commit()
-      print("Se ha creado una tabla")
+        # Bind the key release event to the format function
+        self.date_entry.bind("<KeyRelease>", self.format_date)
 
-def insertar_valor():
-   direccion_db = r"F:\CODE\Clase POO\Proyecto\Proyecto-Orientada-A-Objetos\base_de_datos.db"
-   with sqlite3.connect(direccion_db) as conn:
-      cursor = conn.cursor()
-      cursor.execute("INSERT INTO prueba VALUES(2,'Adios')")
-      print("Se ha insertado un valor")
+    def format_date(self, event):
+        # Get the current input
+        input_text = self.date_entry.get()
 
-def seleccionar_todo():
-   direccion_db = r"F:\CODE\Clase POO\Proyecto\Proyecto-Orientada-A-Objetos\base_de_datos.db"
-   with sqlite3.connect(direccion_db) as conn:
-      cursor = conn.cursor()
-      cursor.execute("SELECT * FROM prueba")
-      print("Lo que se ha encontrado en el cursor es: ")
-      print(cursor.fetchall())
-   
-def run_query(query:str, parametros:tuple=()):
-   direccion_db = r"F:\CODE\Clase POO\Proyecto\Proyecto-Orientada-A-Objetos\base_de_datos.db"
-   with sqlite3.connect(direccion_db) as conn:
-      cursor = conn.cursor()
-      resultado = cursor.execute(query,parametros)
-      conn.commit()
-      print(f"Se ha ejecutado el comando:{query} con parametros: {parametros} ")
-   return resultado
+        # Remove all non-digit characters
+        digits = ''.join(filter(str.isdigit, input_text))
+
+        # Format the digits into YYYY-MM-DD
+        formatted_date = ''
+        if len(digits) >= 4:
+            formatted_date += digits[:4]  # Year
+            if len(digits) >= 6:
+                formatted_date += '-' + digits[4:6]  # Month
+                if len(digits) >= 8:
+                    formatted_date += '-' + digits[6:8]  # Day
+
+        # Update the entry with the formatted date
+        self.date_entry.after(1, lambda: self.update_entry(formatted_date))
+
+    def update_entry(self, formatted_date):
+        self.date_entry.delete(0, tk.END)
+        self.date_entry.insert(0, formatted_date)
+
+        # Move the cursor to the end of the entry
+        self.date_entry.icursor(len(formatted_date))
 
 if __name__ == "__main__":
-   ventana = tkinter.Tk()
-
-   ventana.mainloop()
-
-
+    root = tk.Tk()
+    app = DateEntryApp(root)
+    root.mainloop()

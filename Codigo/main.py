@@ -238,17 +238,27 @@ class Participantes:
         '''Manda un mensaje de error en caso tal de que la fecha no sea valida'''
         if not self.__fecha_valida(event.widget):
             mssg.showerror("Fecha Invalida","El Campo De Fecha Es Invalido")
+            self.botones["Grabar"].configure(state=tk.DISABLED)
+            self.botones["Grabar"].bind("<1>",lambda e:mssg.showerror("Fecha Invalida","No Se Puede Grabar Una Fecha Invalida"))
         else:
-            self.restaurar_placeholder(event=event) #En caso tal de que la longitud de los caracteres en el string sea igual a 1 o 0
+            if self.botones["Grabar"]["state"] == tk.DISABLED: 
+                if self.__fecha_valida(entry=self.entries_inscripcion["Fecha"]) and self.__fecha_valida(entry=self.entries_inscripcion["Fecha_Inscripcion"]):
+                    self.botones["Grabar"].configure(state=tk.ACTIVE)
+                    self.botones["Grabar"].bind("<1>",self.adiciona_Registro)
+            else:  
+                self.botones["Grabar"].configure(state=tk.ACTIVE)
+                self.botones["Grabar"].bind("<1>",self.adiciona_Registro)
+
+            self.restaurar_placeholder(event=event) #En caso tal de que la longitud de los caracteres en el string sea igual a 1 o 0        
 
     def valida_Fecha(self, event:tk.Event=None): #POR IMPLEMENTAR
         '''Se encarga de dar el formato automatico de AAAA-MM-DD osea pone los guiones'''
         validar = self.aceptar_solo_numeros(event=event)
         if validar == "break":
-            return "break"
+            return validar
         if event.char.isdigit():
             if len(event.widget.get())==10:
-                event.widget.delete(0,tk.END)
+                event.widget.delete(9,tk.END)
             else:
                 if len(event.widget.get())==4 or len(event.widget.get())==7:
                     event.widget.insert(tk.END,"-")
@@ -256,6 +266,10 @@ class Participantes:
                     pass
         else:
             event.widget.delete(10,"end")
+
+        entry = event.widget
+        entry.icursor(tk.END) #Se pasa el cursor del entry al final del mismo para evitar que se ponga el cursor en una posicion que afecte
+        #el formato
     
     def edita_tablaTreeView(self, event=None):
         ''' Se encarga de ejecutar una rutina para cargar los datos de edicion a la seccion
